@@ -6,7 +6,7 @@ endif
 
 CPP_COMMON = include
 
-CCFLAGS=
+CCFLAGS = -std=c++11
 
 INC = -I $(CPP_COMMON)
 
