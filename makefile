@@ -8,7 +8,10 @@ CPP_COMMON = include
 
 CCFLAGS = -std=c++11
 
+CPP_MOD = CPP_COMMON + src
+
 INC = -I $(CPP_COMMON)
+INC_MOD = -I $(CPP_MOD)
 
 LIBS = -lOpenCL -lm
 
@@ -37,6 +40,10 @@ bin/step_world : src/step_world.cpp src/heat.cpp
 	-mkdir -p bin
 	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
+bin/step_world_v1_lambda : src/txl11/step_world_v1_lambda.cpp src/heat.cpp
+	-mkdir -p bin
+	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
-all : bin/test_opencl bin/make_world bin/render_world bin/step_world 
+
+all : bin/test_opencl bin/make_world bin/render_world bin/step_world bin/step_world_v1_lambda 
 
