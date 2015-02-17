@@ -48,5 +48,9 @@ bin/step_world_v2_function : src/txl11/step_world_v2_function.cpp src/heat.cpp
 	-mkdir -p bin
 	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
-all : bin/test_opencl bin/make_world bin/render_world bin/step_world bin/step_world_v1_lambda bin/step_world_v2_function 
+bin/step_world_v3_opencl : src/txl11/step_world_v3_opencl.cpp src/heat.cpp
+	-mkdir -p bin
+	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
+
+all : bin/test_opencl bin/make_world bin/render_world bin/step_world bin/step_world_v1_lambda bin/step_world_v2_function bin/step_world_v3_opencl
 
