@@ -11,6 +11,50 @@
 namespace hpce{
 namespace txl11{
 
+void kernel_xy(uint32_t x, uint32_t y, uint32_t w, const float inner, const float outer, const float *world_state, const uint32_t *world_properties, float *buffer)
+{
+    unsigned index=y*w + x;
+            
+            if((world_properties[index] & Cell_Fixed) || (world_properties[index] & Cell_Insulator)){
+                // Do nothing, this cell never changes (e.g. a boundary, or an interior fixed-value heat-source)
+                buffer[index]=world_state[index];
+            }else{
+                float contrib=inner;
+                float acc=inner*world_state[index];
+                
+                // Cell above
+                if(! (world_properties[index-w] & Cell_Insulator)) {
+                    contrib += outer;
+                    acc += outer * world_state[index-w];
+                }
+                
+                // Cell below
+                if(! (world_properties[index+w] & Cell_Insulator)) {
+                    contrib += outer;
+                    acc += outer * world_state[index+w];
+                }
+                
+                // Cell left
+                if(! (world_properties[index-1] & Cell_Insulator)) {
+                    contrib += outer;
+                    acc += outer * world_state[index-1];
+                }
+                
+                // Cell right
+                if(! (world_properties[index+1] & Cell_Insulator)) {
+                    contrib += outer;
+                    acc += outer * world_state[index+1];
+                }
+                
+                // Scale the accumulate value by the number of places contributing to it
+                float res=acc/contrib;
+                // Then clamp to the range [0,1]
+                res=std::min(1.0f, std::max(0.0f, res));
+                buffer[index] = res;
+            }
+};
+
+
 void StepWorldV2Function(world_t &world, float dt, unsigned n)
 {
     unsigned w=world.w, h=world.h;
@@ -20,55 +64,12 @@ void StepWorldV2Function(world_t &world, float dt, unsigned n)
     
     // This is our temporary working space
     std::vector<float> buffer(w*h);
-
-    auto kernel_xy = [&](unsigned x, unsigned y)
-    {
-        unsigned index=y*w + x;
-                
-                if((world.properties[index] & Cell_Fixed) || (world.properties[index] & Cell_Insulator)){
-                    // Do nothing, this cell never changes (e.g. a boundary, or an interior fixed-value heat-source)
-                    buffer[index]=world.state[index];
-                }else{
-                    float contrib=inner;
-                    float acc=inner*world.state[index];
-                    
-                    // Cell above
-                    if(! (world.properties[index-w] & Cell_Insulator)) {
-                        contrib += outer;
-                        acc += outer * world.state[index-w];
-                    }
-                    
-                    // Cell below
-                    if(! (world.properties[index+w] & Cell_Insulator)) {
-                        contrib += outer;
-                        acc += outer * world.state[index+w];
-                    }
-                    
-                    // Cell left
-                    if(! (world.properties[index-1] & Cell_Insulator)) {
-                        contrib += outer;
-                        acc += outer * world.state[index-1];
-                    }
-                    
-                    // Cell right
-                    if(! (world.properties[index+1] & Cell_Insulator)) {
-                        contrib += outer;
-                        acc += outer * world.state[index+1];
-                    }
-                    
-                    // Scale the accumulate value by the number of places contributing to it
-                    float res=acc/contrib;
-                    // Then clamp to the range [0,1]
-                    res=std::min(1.0f, std::max(0.0f, res));
-                    buffer[index] = res;
-                }
-    };
     
     for(unsigned t=0;t<n;t++){
         for(unsigned y=0;y<h;y++){
             for(unsigned x=0;x<w;x++){
                 
-                kernel_xy(x,y);                    
+                kernel_xy(x, y, w, inner, outer, &world.state[0], (const uint32_t*) &world.properties[0], &buffer[0]);                   
             }  // end of for(x...
         } // end of for(y...
         
