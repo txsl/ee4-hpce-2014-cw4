@@ -47,6 +47,11 @@ the headers and libraries you need to compile your programs;
 and the OpenCL run-time, which provides access to the
 underlying compute resource.
 
+### Cross-platform
+
+@farrell236 was nice enough to contribute the [CMakeLists.txt](CMakeLists.txt),
+which is a way of getting [cross-platform builds with CMake](https://github.com/HPCE/hpce-2014-cw4/issues/5).
+
 ### Windows
 
 There are a number of SDKs available that can be downloaded,
@@ -92,6 +97,10 @@ Apparently, adding the option:
 to your compilation may help when trying to sort out header
 and linker directories.
 
+_Note: Various contributors have suggestions for getting
+[compilation working](https://github.com/HPCE/hpce-2014-cw4/issues/4)
+under OSX._
+
 ### AWS
 
 I've created an image for AWS which has OpenCL set up,
@@ -99,7 +108,13 @@ both for software and the GPU. The title of the image
 is `HPCE-2014-GPU-Image`, which can be selected when
 you launch an AWS instance. The steps for reproducing
 are [available](aws_setup.md), but it isn't much fun
-recreating it.
+recreating it. @schmethan suggests also installing
+`eog` and `libcanberra-gtk3-module` for viewing images.
+
+### Debugging
+
+@kronocharia has [some suggestions](https://github.com/HPCE/hpce-2014-cw4/issues/6) on how
+to debug programs which are part of a pipeline.
 
 The Heat World code
 ===================
@@ -175,7 +190,7 @@ the cells around them.
 
 Now advance the world by a single time-step of length 0.1 seconds:
 
-	make_world.exe 10 0.1 | step_world 0.1 1
+	make_world 10 0.1 | step_world 0.1 1
 
 You'll see that the the cells next to the heat source row has
 warmed up. The warming is not uniform, as at the far left and
@@ -184,14 +199,14 @@ to the simple model using here, they end up slightly warmer.
 
 You can now advance the world by a few seconds:
 
-	make_world.exe 10 0.1 | step_world 0.1 100
+	make_world 10 0.1 | step_world 0.1 100
 
 You should see that some of the heat is making it's way
 around the right hand side, but it can't come through
 the insulator across the middle-left. Step forward
 by a 1000 seconds:
 
-	make_world.exe 10 0.1 | step_world 0.1 10000
+	make_world 10 0.1 | step_world 0.1 10000
 
 and you'll see the world has largely reached a steady-state,
 with high temperatures around the top, then slowly
@@ -203,16 +218,16 @@ at very high spatial resolutions (i.e. lots of cells),
 and very fine temporal resolutions. This sort of discretisation
 is most accurate when both time and space are very
 fine. To visualise much finer-grain scenarios, it is
-conventient to view it as a bitmap:
+convenient to view it as a bitmap:
 
-	make_world.exe 100 0.1 | step_world 0.1 100 | render_world dump.bmp
+	make_world 100 0.1 | step_world 0.1 100 | render_world dump.bmp
 
 If you look at `dump.bmp`, you should see insulators rendered
 in green, and the temperature shown from blue (0) to red (1). However,
 over a total time of 0.1*100=10 seconds, very little will have happened.
 To see anything happen, you'll need to up the time significantly:
 
-	make_world.exe 100 0.1 | step_world 0.1 100000 | render_world dump.bmp
+	make_world 100 0.1 | step_world 0.1 100000 | render_world dump.bmp
 	
 It is getting fairly slow, even at a resolution of 100x100, but in
 practise we'd like to increase resolution 10x in all three dimensions
@@ -221,7 +236,7 @@ a factor of 1000.
 
 This type of computation is ideal for a GPU, as it maps very
 well to the grid-structure provided by both the hardware
-and the progamming model.
+and the programming model.
 
 Preparing the code for OpenCL
 =============================
@@ -477,8 +492,8 @@ numbers or pointers to arrays.
 Test the function to make sure it still works. If so, we
 are now in a position to map it into a CPU kernel.
 
-Intial conversion to OpenCL
-===========================
+Initial conversion to OpenCL (v3)
+=================================
 
 We've now got a version of the code which has
 separated the computationally intensive part out
@@ -502,13 +517,13 @@ GPU kernel. We'll do all this in a file called
 `src/your_login/step_world_v3_opencl.cpp`, with
 a function called `src::your_login::StepWorldV3OpenCL`.
 
-Create the new file based on the `src/your_login/step_world_v2_function.cpp' code,
+Create the new file based on the `src/your_login/step_world_v2_function.cpp` code,
 and check you can still build and run it. While we're
 setting up the OpenCL parts, don't worry too much about
 the data going in and out. You can simply test it using
 something equivalent to:
 
-    bin/make_world | src/your_login/step_world_v3_opencl > /dev/null
+    bin/make_world | bin/step_world_v3_opencl > /dev/null
 
 as for a while we'll just look at stderr.
 
@@ -597,7 +612,7 @@ file, but we'll do it by an environment variable:
 	cl::Platform platform=platforms.at(selectedPlatform);    
 
 This means that by default it will select the first platform,
-but if we change an evironment variable (e.g. `export HPCE_SELECT_PLATFORM=1`
+but if we change an environment variable (e.g. `export HPCE_SELECT_PLATFORM=1`
 in bash), then the executable will do something different.
 While not as good as a configuration file, this makes it
 possible to select what happens _without_ recompiling. Again,
@@ -677,7 +692,7 @@ re-compiling:
 	Found 2 devices
 	  Device 0 : Caicos
 	  Device 1 :         Intel(R) Core(TM) i7-2600 CPU @ 3.40GHz
-	Choosing device 1
+	Choosing device 0
 
 	dt10@TOTO /cygdrive/e/_dt10_/documents/teaching/2014/hpce/cw/CW4
 	$ export HPCE_SELECT_DEVICE=1
@@ -1284,8 +1299,8 @@ So what is wrong? We have a number of problems here:
 	private and shared memory as well.
 	
 
-Optimising memory accesses
-==========================
+Optimising CPU to GPU transfers (v4)
+===========================================
 
 The first thing to try is to remove the redundant memory copies: if you look at
 `StepWorldV3OpenCL` the enqueue read at the bottom of the time loop
@@ -1453,8 +1468,8 @@ Depending on your platform, you may now start to see a reasonable
 speed-up over software (though probably still not over TBB).
 
 
-Optimising memory accesses
-==================
+Optimising global to GPU memory accesses (v5)
+=============================================
 
 One of the biggest problems in GPU programming is managing the different memory
 spaces. Slight differences in memory layout can cause large changes in
@@ -1483,6 +1498,9 @@ bits.
 
 ### Kernel code
 
+Create a new kernel called `src/src/your_login/step_world_v5_packed_properties.cl`
+based on the v4 kernel.
+
 At the top of the code, read the properties for the current cell into
 a private uint variable. This value will be read once into fast private
 memory, and then from then on it can be accessed very cheaply.
@@ -1500,6 +1518,9 @@ above is an insulator, the first branch could be re-written to:
 The other neighbours will need to depend on different bits in the properties.
 
 ### Host code
+
+Create a new implementation called `src/src/your_login/step_world_v5_packed_properties.cpp`
+based on the v4 host code.
 
 In the host code, you need to make sure the the correct flags have
 been inserted into the properties buffer. This should only have local
