@@ -4,16 +4,14 @@ ifndef CPPC
 	CPPC=g++
 endif
 
-CPP_COMMON = include
+CPP_COMMON = -I include/
+CPP_COMMON += -I opencl_sdk/include/
 
 CCFLAGS = -std=c++11
 
-# CPP_MOD = CPP_COMMON + src
+INC = $(CPP_COMMON)
 
-INC = -I $(CPP_COMMON)
-# INC_MOD = -I $(CPP_MOD)
-
-LIBS = -lOpenCL -lm
+LIBS = -lOpenCL
 
 # Check our platform and make sure we define the APPLE variable
 # and set up the right compiler flags and libraries
