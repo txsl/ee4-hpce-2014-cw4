@@ -38,28 +38,28 @@ bin/step_world : src/step_world.cpp src/heat.cpp
 	-mkdir -p bin
 	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
-bin/step_world_v1_lambda : src/txl11/step_world_v1_lambda.cpp src/heat.cpp
-	-mkdir -p bin
+bin/txl11/step_world_v1_lambda : src/txl11/step_world_v1_lambda.cpp src/heat.cpp
+	-mkdir -p bin/txl11
 	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
-bin/step_world_v2_function : src/txl11/step_world_v2_function.cpp src/heat.cpp
-	-mkdir -p bin
+bin/txl11/step_world_v2_function : src/txl11/step_world_v2_function.cpp src/heat.cpp
+	-mkdir -p bin/txl11
 	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
-bin/step_world_v3_opencl : src/txl11/step_world_v3_opencl.cpp src/heat.cpp
-	-mkdir -p bin
+bin/txl11/step_world_v3_opencl : src/txl11/step_world_v3_opencl.cpp src/heat.cpp
+	-mkdir -p bin/txl11
 	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
-bin/step_world_v4_double_buffered : src/txl11/step_world_v4_double_buffered.cpp src/heat.cpp
-	-mkdir -p bin
+bin/txl11/step_world_v4_double_buffered : src/txl11/step_world_v4_double_buffered.cpp src/heat.cpp
+	-mkdir -p bin/txl11
 	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
-bin/step_world_v5_packed_properties : src/txl11/step_world_v5_packed_properties.cpp src/heat.cpp
-	-mkdir -p bin
+bin/txl11/step_world_v5_packed_properties : src/txl11/step_world_v5_packed_properties.cpp src/heat.cpp
+	-mkdir -p bin/txl11
 	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
 
-all : bin/test_opencl bin/make_world bin/render_world bin/step_world bin/step_world_v1_lambda bin/step_world_v2_function bin/step_world_v3_opencl bin/step_world_v4_double_buffered
+all : bin/test_opencl bin/make_world bin/render_world bin/step_world bin/txl11/step_world_v1_lambda bin/txl11/step_world_v2_function bin/txl11/step_world_v3_opencl bin/txl11/step_world_v4_double_buffered bin/txl11/step_world_v5_packed_properties
 
 clean : 
 	rm -rf bin
