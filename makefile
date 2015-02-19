@@ -54,6 +54,10 @@ bin/step_world_v4_double_buffered : src/txl11/step_world_v4_double_buffered.cpp 
 	-mkdir -p bin
 	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
 
+bin/step_world_v5_packed_properties : src/txl11/step_world_v5_packed_properties.cpp src/heat.cpp
+	-mkdir -p bin
+	$(CPPC) $^ $(INC) $(CCFLAGS) $(LIBS) -o $@
+
 
 all : bin/test_opencl bin/make_world bin/render_world bin/step_world bin/step_world_v1_lambda bin/step_world_v2_function bin/step_world_v3_opencl bin/step_world_v4_double_buffered
 
